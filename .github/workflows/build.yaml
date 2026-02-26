@@ -13,7 +13,7 @@ jobs:
   main:
     name: ${{ matrix.os }} main
     needs: flutter-prep
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -84,7 +84,7 @@ jobs:
   test-packages:
     name: ${{ matrix.os }} ${{ matrix.package }} test
     needs: flutter-prep
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -113,7 +113,7 @@ jobs:
   test-tool:
     name: ${{ matrix.os }} Tool test
     needs: flutter-prep
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -136,7 +136,7 @@ jobs:
   test:
     name: ${{ matrix.os }} ${{ matrix.bot }}
     needs: flutter-prep
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -167,7 +167,7 @@ jobs:
   macos-test:
     needs: flutter-prep
     name: macos goldens ${{ matrix.bot }}
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -210,7 +210,7 @@ jobs:
     name: ${{ matrix.os }} devtools_app integration-test ${{ matrix.bot }} - ${{ matrix.device
       }} - shard ${{ matrix.shard }}
     needs: flutter-prep
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -281,7 +281,7 @@ jobs:
   devtools-extensions-integration-test:
     name: ${{ matrix.os }} devtools_extensions integration-test ${{ matrix.bot }}
     needs: flutter-prep
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -309,7 +309,7 @@ jobs:
   devtools-webdriver-test:
     name: ${{ matrix.os }} devtools webdriver test
     needs: flutter-prep
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -337,7 +337,7 @@ jobs:
   benchmark-performance:
     name: benchmark-performance
     needs: flutter-prep
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
     steps:
