@@ -1,32 +1,11 @@
 name: Bump Dev Version
 on:
-  workflow_dispatch: # Allows for manual triggering if needed
-    inputs:
-      updateType:
-        description: "Update Type"
-        required: true
-        default: "dev"
-        type: choice
-        options:
-          - dev
-          - patch+dev
-          - minor+dev
-          - major+dev
-      draft:
-        description: "PR as Draft"
-        required: false
-        type: boolean
-        default: false
-  schedule:
-    # * is a special character in YAML so you have to quote this string
-    - cron: "0 8 * * *" # Run every day at midnight Pacific Time
+  workflow_dispatch: {}
 permissions:
   contents: write
   pull-requests: write
-
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
 jobs:
   flutter-prep:
     uses: ./.github/workflows/flutter-prep.yaml
@@ -36,101 +15,62 @@ jobs:
     name: Bump Version
     runs-on: ubuntu-latest
     steps:
-      - name: git clone devtools
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-        with:
-          ref: master
+    - name: git clone devtools
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        ref: master
+    - name: Load Cached Flutter SDK
+      uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7
+      with:
+        path: './tool/flutter-sdk
 
-      - name: Load Cached Flutter SDK
-        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7
-        with:
-          path: |
-            ./tool/flutter-sdk
-          key: flutter-sdk-${{ runner.os }}-${{ needs.flutter-prep.outputs.latest_flutter_candidate }}
+          '
+        key: flutter-sdk-${{ runner.os }}-${{ needs.flutter-prep.outputs.latest_flutter_candidate
+          }}
+    - name: setup git config
+      run: '
 
-      - name: setup git config
-        run: |
+        git config user.name "DevTools Workflow Bot"
 
-          git config user.name "DevTools Workflow Bot"
-          git config user.email "dart-devtool-workflow-bot@google.com"
+        git config user.email "dart-devtool-workflow-bot@google.com"
 
-      - name: Bump the Version
-        id: version-bump
-        run: |
-          set -ex
-
-          # Ensure we are using the Dart executable from the Flutter SDK
-          export PATH=`pwd`/tool/flutter-sdk/bin/cache/dart-sdk/bin:`pwd`/tool/flutter-sdk/bin:`pwd`/bin:$PATH
-
-          pushd tool/
-          dart pub get
-          popd
-
-          # Ensure the dt command is available
-          export PATH="$PATH":`pwd`/tool/bin
-
-          ORIGINAL_VERSION=$(dt update-version current-version | tail -1)
-
-          if [ -z "$UPDATE_TYPE" ]; then
-            # If $UPDATE_TYPE is not set, then assume it is dev
-            UPDATE_TYPE="dev"
-          fi
-
-          # If there is a major, minor, or patch bump, do it.
-
-          if [ "$UPDATE_TYPE" == "patch+dev" ]; then
-            dt update-version auto --type patch
-            dt update-version auto --type dev
-          elif [ "$UPDATE_TYPE" == "minor+dev" ]; then
-            dt update-version auto --type minor
-            dt update-version auto --type dev
-          elif [ "$UPDATE_TYPE" == "major+dev" ]; then
-            dt update-version auto --type major
-            dt update-version auto --type dev
-          elif [ "$UPDATE_TYPE" == "dev" ]; then
-            if ! echo "$ORIGINAL_VERSION" | grep -Eq "\-dev\.[0-9]+" ; then
-              ERROR_DESCRIPTION="Doing \
-            a Dev bump on a release version ($ORIGINAL_VERSION) is not supported. \
-            Ensure that that current version has been properly bumped to a '-dev.*' \
-            pre-release version, in order to continue daily dev bumps."
-
-              echo "::error ,title=Cannot do a dev bump on a Release Version ($ORIGINAL_VERSION)::$ERROR_DESCRIPTION" 
-              exit 1;
-            fi
-            dt update-version auto --type dev
-          else
-            echo "ERROR: UNEXPECTED UPDATE TYPE: $UPDATE_TYPE"
-            exit 1
-          fi
-
-          NEW_VERSION=$(dt update-version current-version | tail -1)
-
-          echo "COMMIT_MESSAGE=Updating from $ORIGINAL_VERSION to $NEW_VERSION" >> $GITHUB_OUTPUT
-        env:
-          UPDATE_TYPE: ${{ inputs.updateType }}
-
-      - name: Create the PR
-        run: |
-          set -ex
-          BRANCH_NAME="auto-bump-$(date +%s)"
-          # Stage the file, commit and push
-          git checkout -b "$BRANCH_NAME"
-          git commit -a -m "$COMMIT_MESSAGE"
-          git push -u origin "$BRANCH_NAME"
-
-          if [ "$IS_DRAFT" == "true" ]; then
-            CREATION_FLAGS="--draft"
-          fi
-
-          PR_URL=$(gh pr create --title "$COMMIT_MESSAGE" --body "Automated Version Bump" $CREATION_FLAGS) 
-
-          # Change github credentials back to the actions bot.
-          GH_TOKEN="$ORIGINAL_GH_TOKEN"
-
-          gh pr edit $PR_URL $FLAGS --add-label "autosubmit"
-
-        env:
-          COMMIT_MESSAGE: ${{ steps.version-bump.outputs.COMMIT_MESSAGE }}
-          GH_TOKEN: ${{ secrets.DEVTOOLS_WORKFLOW_BOT_TOKEN }}
-          ORIGINAL_GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          IS_DRAFT: ${{ inputs.draft == true }}
+        '
+    - name: Bump the Version
+      id: version-bump
+      run: "set -ex\n\n# Ensure we are using the Dart executable from the Flutter\
+        \ SDK\nexport PATH=`pwd`/tool/flutter-sdk/bin/cache/dart-sdk/bin:`pwd`/tool/flutter-sdk/bin:`pwd`/bin:$PATH\n\
+        \npushd tool/\ndart pub get\npopd\n\n# Ensure the dt command is available\n\
+        export PATH=\"$PATH\":`pwd`/tool/bin\n\nORIGINAL_VERSION=$(dt update-version\
+        \ current-version | tail -1)\n\nif [ -z \"$UPDATE_TYPE\" ]; then\n  # If $UPDATE_TYPE\
+        \ is not set, then assume it is dev\n  UPDATE_TYPE=\"dev\"\nfi\n\n# If there\
+        \ is a major, minor, or patch bump, do it.\n\nif [ \"$UPDATE_TYPE\" == \"\
+        patch+dev\" ]; then\n  dt update-version auto --type patch\n  dt update-version\
+        \ auto --type dev\nelif [ \"$UPDATE_TYPE\" == \"minor+dev\" ]; then\n  dt\
+        \ update-version auto --type minor\n  dt update-version auto --type dev\n\
+        elif [ \"$UPDATE_TYPE\" == \"major+dev\" ]; then\n  dt update-version auto\
+        \ --type major\n  dt update-version auto --type dev\nelif [ \"$UPDATE_TYPE\"\
+        \ == \"dev\" ]; then\n  if ! echo \"$ORIGINAL_VERSION\" | grep -Eq \"\\-dev\\\
+        .[0-9]+\" ; then\n    ERROR_DESCRIPTION=\"Doing \\\n  a Dev bump on a release\
+        \ version ($ORIGINAL_VERSION) is not supported. \\\n  Ensure that that current\
+        \ version has been properly bumped to a '-dev.*' \\\n  pre-release version,\
+        \ in order to continue daily dev bumps.\"\n\n    echo \"::error ,title=Cannot\
+        \ do a dev bump on a Release Version ($ORIGINAL_VERSION)::$ERROR_DESCRIPTION\"\
+        \ \n    exit 1;\n  fi\n  dt update-version auto --type dev\nelse\n  echo \"\
+        ERROR: UNEXPECTED UPDATE TYPE: $UPDATE_TYPE\"\n  exit 1\nfi\n\nNEW_VERSION=$(dt\
+        \ update-version current-version | tail -1)\n\necho \"COMMIT_MESSAGE=Updating\
+        \ from $ORIGINAL_VERSION to $NEW_VERSION\" >> $GITHUB_OUTPUT\n"
+      env:
+        UPDATE_TYPE: ${{ inputs.updateType }}
+    - name: Create the PR
+      run: "set -ex\nBRANCH_NAME=\"auto-bump-$(date +%s)\"\n# Stage the file, commit\
+        \ and push\ngit checkout -b \"$BRANCH_NAME\"\ngit commit -a -m \"$COMMIT_MESSAGE\"\
+        \ngit push -u origin \"$BRANCH_NAME\"\n\nif [ \"$IS_DRAFT\" == \"true\" ];\
+        \ then\n  CREATION_FLAGS=\"--draft\"\nfi\n\nPR_URL=$(gh pr create --title\
+        \ \"$COMMIT_MESSAGE\" --body \"Automated Version Bump\" $CREATION_FLAGS) \n\
+        \n# Change github credentials back to the actions bot.\nGH_TOKEN=\"$ORIGINAL_GH_TOKEN\"\
+        \n\ngh pr edit $PR_URL $FLAGS --add-label \"autosubmit\"\n"
+      env:
+        COMMIT_MESSAGE: ${{ steps.version-bump.outputs.COMMIT_MESSAGE }}
+        GH_TOKEN: ${{ secrets.DEVTOOLS_WORKFLOW_BOT_TOKEN }}
+        ORIGINAL_GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        IS_DRAFT: ${{ inputs.draft == true }}
